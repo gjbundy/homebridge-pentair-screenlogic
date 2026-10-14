@@ -1,11 +1,11 @@
 {
   "displayName": "Homebridge Pentair Screenlogic",
   "name": "homebridge-pentair-screenlogic",
-  "version": "3.0.2",
+  "version": "4.0.0",
   "description": "Plugin for Pentair Screenlogic Controllers",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zyonse/homebridge-pentair-screenlogic.git"
+    "url": "git+https://github.com/gjbundy/homebridge-pentair-screenlogic.git"
   },
   "keywords": [
     "homebridge-plugin",
@@ -14,33 +14,38 @@
     "screenlogic"
   ],
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/zyonse/homebridge-pentair-screenlogic/issues"
+  "author": {
+    "name": "Garrett Bundy",
+    "url": "https://github.com/gjbundy"
   },
+  "bugs": {
+    "url": "https://github.com/gjbundy/homebridge-pentair-screenlogic/issues"
+  },
+  "homepage": "https://github.com/gjbundy/homebridge-pentair-screenlogic#readme",
   "engines": {
-    "node": ">=10.17.0",
-    "homebridge": ">=1.0.0"
+    "node": "^22.10.0 || ^24.0.0 || ^26.0.0",
+    "homebridge": "^1.8.0 || ^2.0.0-beta.0"
   },
   "scripts": {
-    "lint": "eslint src/**.ts",
-    "watch": "npm run build && npm link && nodemon",
+    "lint": "eslint src",
     "build": "rimraf ./dist && tsc",
-    "prepublishOnly": "npm run lint && npm run build"
+    "prepublishOnly": "npm run lint && npm test && npm run build",
+    "format": "prettier --write src",
+    "test": "vitest run"
   },
   "main": "dist/index.js",
   "dependencies": {
-    "node-screenlogic": "^1.6.0"
+    "node-screenlogic": "^2.1.1"
   },
   "devDependencies": {
-    "@types/node": "^14.14.13",
-    "@typescript-eslint/eslint-plugin": "^3.5.0",
-    "@typescript-eslint/parser": "^3.5.0",
-    "eslint": "^7.15.0",
-    "homebridge": "^1.1.6",
-    "nodemon": "^2.0.6",
-    "prettier": "1.19.1",
-    "rimraf": "^3.0.2",
-    "ts-node": "^8.10.2",
-    "typescript": "^3.9.6"
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.5",
+    "eslint": "^10.12.0",
+    "homebridge": "^2.4.0",
+    "prettier": "^3.9.10",
+    "rimraf": "^6.1.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.4"
   }
 }

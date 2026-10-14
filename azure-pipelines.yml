@@ -1,0 +1,34 @@
+trigger:
+  branches:
+    include:
+      - master
+      - modernize
+
+pr:
+  branches:
+    include:
+      - master
+
+pool:
+  vmImage: ubuntu-latest
+
+strategy:
+  matrix:
+    node22:
+      nodeVersion: 22.x
+    node24:
+      nodeVersion: 24.x
+
+steps:
+  - task: UseNode@1
+    inputs:
+      version: $(nodeVersion)
+    displayName: Use Node $(nodeVersion)
+  - script: npm ci
+    displayName: Install
+  - script: npm run lint
+    displayName: Lint
+  - script: npm test
+    displayName: Test
+  - script: npm run build
+    displayName: Build

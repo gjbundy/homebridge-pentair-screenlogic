@@ -17,7 +17,7 @@ export class CircuitAccessory {
     return {
       generateUUID: CircuitAccessory.generateUUID,
       sameContext: CircuitAccessory.sameContext,
-      factory: function(platform: ScreenLogicPlatform, accessory: PlatformAccessory) {
+      factory: function (platform: ScreenLogicPlatform, accessory: PlatformAccessory) {
         return new CircuitAccessory(platform, accessory)
       },
     }

@@ -9,7 +9,7 @@ export class TemperatureAccessory {
     return {
       generateUUID: TemperatureAccessory.generateUUID,
       sameContext: TemperatureAccessory.sameContext,
-      factory: function(platform: ScreenLogicPlatform, accessory: PlatformAccessory) {
+      factory: function (platform: ScreenLogicPlatform, accessory: PlatformAccessory) {
         return new TemperatureAccessory(platform, accessory)
       },
     }
@@ -66,7 +66,7 @@ export class TemperatureAccessory {
   }
 
   private get context(): TemperatureAccessoryContext {
-    return this.accessory.context
+    return this.accessory.context as TemperatureAccessoryContext
   }
 
   public updateCurrentTemperature(temperature: number) {

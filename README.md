@@ -6,16 +6,16 @@
 
 Fork of [schemers/homebridge-screenlogic](https://github.com/schemers/homebridge-screenlogic) with some of my own improvements and fixes.
 
-## ScreenLogic plug-in for [Homebridge](https://github.com/nfarina/homebridge) using the [node-screenlogic](https://github.com/parnic/node-screenlogic) library.
+## ScreenLogic plug-in for [Homebridge](https://github.com/homebridge/homebridge) using the [node-screenlogic](https://github.com/parnic/node-screenlogic) library.
 
 <img src="https://user-images.githubusercontent.com/249172/86522408-04f3d980-be12-11ea-8fc2-e85904a8b415.png" width="300"> <img src="https://user-images.githubusercontent.com/249172/86522409-0a512400-be12-11ea-8c9f-4165e9fe76a5.png" width="300">
 
 ## Requirements
 
-This plugin was recently rewritten in Typescript to use the latest capabilities of Homebridge 1.x, so it requires at a minimum:
+This plugin requires at a minimum:
 
-1. Homebridge >= 1.0.0
-2. Node >= 10.17.0
+1. Homebridge >= 1.8.0 (Homebridge 2.x is supported)
+2. Node 22, 24 or 26
 
 ## Installation
 

@@ -20,7 +20,7 @@ export class ThermostatAccessory {
     return {
       generateUUID: ThermostatAccessory.generateUUID,
       sameContext: ThermostatAccessory.sameContext,
-      factory: function(platform: ScreenLogicPlatform, accessory: PlatformAccessory) {
+      factory: function (platform: ScreenLogicPlatform, accessory: PlatformAccessory) {
         return new ThermostatAccessory(platform, accessory)
       },
     }
@@ -70,11 +70,12 @@ export class ThermostatAccessory {
     this.service
       .getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
       .on('set', this.setTargetHeatingCoolingState.bind(this))
-      .setProps({  // Restrict states to "Off" and "Heat"
+      .setProps({
+        // Restrict states to "Off" and "Heat"
         minValue: 0,
         maxValue: 1,
         validValues: [0, 1],
-      });
+      })
 
     this.service.getCharacteristic(this.platform.Characteristic.TargetTemperature).setProps({
       format: Formats.FLOAT,

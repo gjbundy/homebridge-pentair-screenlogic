@@ -1,4 +1,13 @@
-import ScreenLogic from 'node-screenlogic'
+import {
+  BodyIndex,
+  FindUnits,
+  HeatModes,
+  LightCommands,
+  RemoteLogin,
+  SLControllerConfigData,
+  SLEquipmentStateData,
+  UnitConnection,
+} from 'node-screenlogic'
 import { Logger } from 'homebridge'
 
 interface ControllerOptions {
@@ -25,6 +34,13 @@ interface ControllerOptions {
  *   }
  */
 export class Controller {
+  /**
+   * node-screenlogic 2.x reports circuit ids relative to 1 (1, 2, ...) while 1.x and the
+   * ScreenLogic protocol use 500, 501, .... We keep the protocol ids everywhere in the plugin so
+   * existing accessories (whose UUIDs include the circuit id) and user config remain valid.
+   */
+  static readonly CIRCUIT_ID_OFFSET = 499
+
   static readonly SPA_CIRCUIT_ID = 500
   static readonly POOL_CIRCUIT_ID = 505
 
@@ -49,258 +65,111 @@ export class Controller {
   }
 
   async getPoolConfig(): Promise<PoolConfig> {
-    const connection = await this._getConnection()
-    try {
-      await this._login(connection)
-      return await this._getPoolConfig(connection)
-    } finally {
-      connection.close()
-    }
+    return this._withConnection(async (connection) => {
+      const { version } = await connection.getVersionAsync()
+      const config = await connection.equipment.getControllerConfigAsync()
+      this.log.debug('controllerConfig', config)
+      return new PoolConfig(connection.systemName, version, config)
+    })
   }
 
   async getPoolStatus(): Promise<PoolStatus> {
-    const connection = await this._getConnection()
-    try {
-      await this._login(connection)
-      return await this._getPoolStatus(connection)
-    } finally {
-      connection.close()
-    }
+    return this._withConnection(async (connection) => {
+      return new PoolStatus(await connection.equipment.getEquipmentStateAsync())
+    })
   }
 
   async setCircuitState(circuitId: number, circuitState: boolean): Promise<void> {
-    const connection = await this._getConnection()
-    try {
-      await this._login(connection)
-      return await this._setCircuitState(connection, circuitId, circuitState)
-    } finally {
-      connection.close()
-    }
+    await this._withConnection((connection) =>
+      connection.circuits.setCircuitStateAsync(
+        circuitId - Controller.CIRCUIT_ID_OFFSET,
+        circuitState,
+      ),
+    )
   }
 
   async setHeatPoint(bodyType: number, heatPoint: number): Promise<void> {
-    const connection = await this._getConnection()
-    try {
-      await this._login(connection)
-      return await this._setHeatPoint(connection, bodyType, heatPoint)
-    } finally {
-      connection.close()
-    }
+    await this._withConnection((connection) =>
+      connection.bodies.setSetPointAsync(bodyType as BodyIndex, heatPoint),
+    )
   }
 
-  async sendLightCommand(cmd: number): Promise<void> {
-    const connection = await this._getConnection()
-    try {
-      await this._login(connection)
-      return await this._sendLightCommand(connection, cmd)
-    } finally {
-      connection.close()
-    }
+  async sendLightCommand(cmd: LightCommands): Promise<void> {
+    await this._withConnection((connection) => connection.circuits.sendLightCommandAsync(cmd))
   }
 
   async setHeatMode(bodyType: number, heatMode: number): Promise<void> {
+    await this._withConnection((connection) =>
+      connection.bodies.setHeatModeAsync(bodyType as BodyIndex, heatMode as HeatModes),
+    )
+  }
+
+  /** open a connection, log in, run the operation, and always close the connection */
+  private async _withConnection<T>(
+    operation: (connection: UnitConnection) => Promise<T>,
+  ): Promise<T> {
     const connection = await this._getConnection()
     try {
-      await this._login(connection)
-      return await this._setHeatMode(connection, bodyType, heatMode)
+      await connection.connectAsync()
+      return await operation(connection)
     } finally {
-      connection.close()
+      await connection.closeAsync().catch((err) => this.log.debug('error closing connection:', err))
     }
   }
 
-  async _getPoolConfig(connection: ScreenLogic.UnitConnection): Promise<PoolConfig> {
-    let softwareVersion = ''
-    return new Promise((resolve, reject) => {
-      connection
-        .once('version', version => {
-          softwareVersion = version.version
-          connection.getControllerConfig()
-        })
-        .once('controllerConfig', poolConfig => {
-          this.log.debug('controllerConfig', poolConfig)
-          resolve(new PoolConfig(connection.gatewayName, softwareVersion, poolConfig))
-        })
-        .on('error', err => {
-          reject(err)
-        })
-      connection.getVersion()
-    })
-  }
-
-  async _setCircuitState(
-    connection: ScreenLogic.UnitConnection,
-    circuitId: number,
-    circuitState: boolean,
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      connection
-        .once('circuitStateChanged', () => {
-          resolve()
-        })
-        .once('badParameter', () => {
-          reject(new ControllerError('bad parameter passed to set command'))
-        })
-        .on('error', err => {
-          reject(err)
-        })
-      connection.setCircuitState(0, circuitId, circuitState ? 1 : 0)
-    })
-  }
-
-  async _sendLightCommand(connection: ScreenLogic.UnitConnection, cmd: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-      connection
-        .once('sentLightCommand', () => {
-          resolve()
-        })
-        .once('badParameter', () => {
-          reject(new ControllerError('bad parameter passed to send light command'))
-        })
-        .on('error', err => {
-          reject(err)
-        })
-      connection.sendLightCommand(0, cmd)
-    })
-  }
-
-  async _setHeatPoint(
-    connection: ScreenLogic.UnitConnection,
-    bodyType: number,
-    heatPoint: number,
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      connection
-        .once('setPointChanged', () => {
-          resolve()
-        })
-        .once('badParameter', () => {
-          reject(new ControllerError('bad parameter passed to set command'))
-        })
-        .on('error', err => {
-          reject(err)
-        })
-      connection.setSetPoint(0, bodyType, heatPoint)
-    })
-  }
-
-  async _setHeatMode(
-    connection: ScreenLogic.UnitConnection,
-    bodyType: number,
-    heatMode: number,
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      connection
-        .once('heatModeChanged', () => {
-          resolve()
-        })
-        .once('badParameter', () => {
-          reject(new ControllerError('bad parameter passed to set command'))
-        })
-        .on('error', err => {
-          reject(err)
-        })
-      connection.setHeatMode(0, bodyType, heatMode)
-    })
-  }
-
-  async _getPoolStatus(connection: ScreenLogic.UnitConnection): Promise<PoolStatus> {
-    return new Promise((resolve, reject) => {
-      connection
-        .once('poolStatus', status => {
-          //this.log.debug('poolStatus', status)
-          resolve(new PoolStatus(status))
-        })
-        .on('error', err => {
-          reject(err)
-        })
-      connection.getPoolStatus()
-    })
-  }
-
-  async _login(connection: ScreenLogic.UnitConnection): Promise<void> {
-    return new Promise((resolve, reject) => {
-      connection
-        .once('loggedIn', () => {
-          resolve()
-        })
-        .once('loginFailed', () => {
-          reject(new ControllerError('unable to login'))
-        })
-        .on('error', err => {
-          reject(err)
-        })
-      connection.connect()
-    })
-  }
-
-  async _getConnection(): Promise<ScreenLogic.UnitConnection> {
+  private async _getConnection(): Promise<UnitConnection> {
     if (this.ip_address) {
-      return this._getConnectionByIPAddress()
+      return this._getConnectionByIPAddress(this.ip_address)
     } else if (this.username && this.password) {
-      return this._getConnectionByRemoteLogin()
+      return this._getConnectionByRemoteLogin(this.username, this.password)
     } else {
       return this._getConnectionByBroadcast()
     }
   }
 
   /** get a connection by udp broadcast */
-  async _getConnectionByBroadcast(): Promise<ScreenLogic.UnitConnection> {
-    return new Promise((resolve, reject) => {
-      const finder = new ScreenLogic.FindUnits()
-      finder
-        .on('serverFound', server => {
-          finder.close()
-          const connection = new ScreenLogic.UnitConnection(server)
-          connection.gatewayName = server.gatewayName
-          resolve(connection)
-        })
-        .on('error', err => {
-          reject(err)
-        })
-      finder.search()
-    })
+  private async _getConnectionByBroadcast(): Promise<UnitConnection> {
+    const units = await new FindUnits().searchAsync()
+    if (units.length === 0) {
+      throw new ControllerError('no local unit found')
+    }
+    const connection = new UnitConnection()
+    connection.initUnit(units[0])
+    return connection
   }
 
   /** get a connection by IP address */
-  async _getConnectionByIPAddress(): Promise<ScreenLogic.UnitConnection> {
-    return new Promise((resolve, _reject) => {
-      const connection = new ScreenLogic.UnitConnection(
-        this.port || 80,
-        this.ip_address,
-        this.password,
-      )
-      connection.gatewayName = this.username ?? 'Pentair: XX-XX-XX'
-      resolve(connection)
-    })
+  private async _getConnectionByIPAddress(ipAddress: string): Promise<UnitConnection> {
+    const connection = new UnitConnection()
+    connection.init(this.username ?? 'Pentair: XX-XX-XX', ipAddress, this.port || 80, this.password)
+    return connection
   }
 
   /** find a unit by remote login */
-  async _getConnectionByRemoteLogin(): Promise<ScreenLogic.UnitConnection> {
-    return new Promise((resolve, reject) => {
-      const remote = new ScreenLogic.RemoteLogin(this.username)
-      remote
-        .on('gatewayFound', unit => {
-          remote.close()
-          if (unit && unit.gatewayFound) {
-            const connection = new ScreenLogic.UnitConnection(unit.port, unit.ipAddr, this.password)
-            connection.gatewayName = this.username
-            resolve(connection)
-          } else {
-            reject(new ControllerError('no remote unit found'))
-          }
-        })
-        .on('error', (err: Error) => {
-          reject(err)
-        })
-      remote.connect()
-    })
+  private async _getConnectionByRemoteLogin(
+    username: string,
+    password: string,
+  ): Promise<UnitConnection> {
+    const remote = new RemoteLogin(username)
+    const unit = await remote.connectAsync()
+    await remote.closeAsync()
+    if (!unit?.gatewayFound) {
+      throw new ControllerError('no remote unit found')
+    }
+    const connection = new UnitConnection()
+    connection.init(username, unit.ipAddr, unit.port, password)
+    return connection
   }
 }
 
 export class ControllerError extends Error {}
 
 export class PoolCircuit {
-  constructor(public readonly id: number, public readonly name: string, public readonly category: number) {}
+  constructor(
+    public readonly id: number,
+    public readonly name: string,
+    public readonly category: number,
+  ) {}
 }
 
 export class PoolConfig {
@@ -317,8 +186,7 @@ export class PoolConfig {
   public readonly hasPool: boolean
   public circuits: PoolCircuit[] = []
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  constructor(gatewayName: string, softwareVersion: string, config: any) {
+  constructor(gatewayName: string, softwareVersion: string, config: SLControllerConfigData) {
     this.gatewayName = gatewayName
     this.deviceId = gatewayName.replace('Pentair: ', '')
 
@@ -331,8 +199,12 @@ export class PoolConfig {
     this.hasSpa = false
     this.hasPool = false
     this.circuits = []
-    for (const circuit of config.bodyArray) {
-      const poolCircuit = new PoolCircuit(circuit.circuitId, circuit.name, circuit.interface)
+    for (const circuit of config.circuitArray) {
+      const poolCircuit = new PoolCircuit(
+        circuit.circuitId + Controller.CIRCUIT_ID_OFFSET,
+        circuit.name,
+        circuit.interface,
+      )
       this.circuits.push(poolCircuit)
       if (poolCircuit.id === Controller.POOL_CIRCUIT_ID) {
         this.hasPool = true
@@ -362,28 +234,29 @@ export class PoolStatus {
 
   public readonly airTemperature: number
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  constructor(status: any) {
+  constructor(status: SLEquipmentStateData) {
     // save circuit state
     this.circuitState = new Map()
     for (const circuit of status.circuitArray) {
-      this.circuitState.set(circuit.id, circuit.state)
+      this.circuitState.set(circuit.id + Controller.CIRCUIT_ID_OFFSET, circuit.state)
     }
 
     this.hasPool = this.circuitState.get(Controller.POOL_CIRCUIT_ID) !== undefined
     this.hasSpa = this.circuitState.get(Controller.SPA_CIRCUIT_ID) !== undefined
 
-    this.poolTemperature = status.currentTemp[0]
-    this.poolSetPoint = status.setPoint[0]
-    this.isPoolActive = this.hasPool && status.isPoolActive()
-    this.isPoolHeating = this.hasPool && status.heatStatus[0] !== 0
-    this.poolHeatMode = status.heatMode[0]
+    const pool = status.bodies[0]
+    this.poolTemperature = pool?.currentTemp
+    this.poolSetPoint = pool?.setPoint
+    this.isPoolActive = this.hasPool && this.circuitState.get(Controller.POOL_CIRCUIT_ID) === 1
+    this.isPoolHeating = this.hasPool && pool?.heatStatus !== 0
+    this.poolHeatMode = pool?.heatMode
 
-    this.spaTemperature = status.currentTemp[1]
-    this.spaSetPoint = status.setPoint[1]
-    this.isSpaActive = this.hasSpa && status.isSpaActive()
-    this.isSpaHeating = this.hasSpa && status.heatStatus[1] !== 0
-    this.spaHeatMode = status.heatMode[1]
+    const spa = status.bodies[1]
+    this.spaTemperature = spa?.currentTemp
+    this.spaSetPoint = spa?.setPoint
+    this.isSpaActive = this.hasSpa && this.circuitState.get(Controller.SPA_CIRCUIT_ID) === 1
+    this.isSpaHeating = this.hasSpa && spa?.heatStatus !== 0
+    this.spaHeatMode = spa?.heatMode
 
     this.airTemperature = status.airTemp
   }

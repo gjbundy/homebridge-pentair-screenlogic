@@ -11,6 +11,11 @@ src
 # eslint
 .eslintrc
 .eslintrc.json
+eslint.config.mjs
+
+# CI and dependency tooling
+.github
+azure-pipelines.yml
 
 # typescript
 tsconfig.json

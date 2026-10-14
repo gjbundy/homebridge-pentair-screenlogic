@@ -55,8 +55,8 @@ const SPA_THERMOSTAT_NAME = 'Spa Heater'
  * parse the user config and discover/register accessories with Homebridge.
  */
 export class ScreenLogicPlatform implements DynamicPlatformPlugin {
-  public readonly Service: typeof Service = this.api.hap.Service
-  public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic
+  public readonly Service: typeof Service
+  public readonly Characteristic: typeof Characteristic
 
   // this is used to track restored cached accessories
   private restoredAccessories: PlatformAccessory[] = []
@@ -82,7 +82,13 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
 
   private circuitAccessories: CircuitAccessory[] = []
 
-  constructor(public readonly log: Logger, config: PlatformConfig, public readonly api: API) {
+  constructor(
+    public readonly log: Logger,
+    config: PlatformConfig,
+    public readonly api: API,
+  ) {
+    this.Service = this.api.hap.Service
+    this.Characteristic = this.api.hap.Characteristic
     this.log.debug('Finished initializing platform', PLATFORM_NAME)
 
     this.config = config as ScreenLogicPlatformConfig
@@ -116,7 +122,7 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
 
     this.controller
       .getPoolConfig()
-      .then(config => {
+      .then((config) => {
         this.poolConfig = config
         this.log.debug('got pool config', this.poolConfig)
         this.log.info(
@@ -124,7 +130,7 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
         )
         this.setupDiscoveredAccessories(this.poolConfig)
       })
-      .catch(err => {
+      .catch((err) => {
         // on error, start another timeout with backoff
         const timeout = this.backoff(retryAttempt, pollingInterval)
         this.log.error(
@@ -192,9 +198,9 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
 
     // filter out hidden circuits
     const hiddenNames = (this.config.hidden_circuits as string) || ''
-    const hiddenCircuits = new Set(hiddenNames.split(',').map(item => item.trim()))
+    const hiddenCircuits = new Set(hiddenNames.split(',').map((item) => item.trim()))
 
-    poolConfig.circuits = poolConfig.circuits.filter(circuit => {
+    poolConfig.circuits = poolConfig.circuits.filter((circuit) => {
       return !hiddenCircuits.has(circuit.name)
     })
 
@@ -220,11 +226,11 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
 
     // unregister orphaned accessories
     const staleAccessories = this.restoredAccessories.filter(
-      accessory => !activeAccessories.has(accessory.UUID),
+      (accessory) => !activeAccessories.has(accessory.UUID),
     )
 
     if (staleAccessories.length) {
-      const staleNames = staleAccessories.map(accessory => accessory.displayName)
+      const staleNames = staleAccessories.map((accessory) => accessory.displayName)
       this.log.info('unregistering accessories', staleNames)
       this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, staleAccessories)
     }
@@ -251,7 +257,7 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
 
     // see if an accessory with the same uuid has already been registered and restored from
     // the cached devices we stored in the `configureAccessory` method above
-    const existingAccessory = this.restoredAccessories.find(accessory => accessory.UUID === uuid)
+    const existingAccessory = this.restoredAccessories.find((accessory) => accessory.UUID === uuid)
 
     if (existingAccessory) {
       // the accessory already exists
@@ -296,7 +302,7 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
         this.log.debug('_pollForStatus success, retryAttempt:', retryAttempt)
         setTimeout(() => this.pollForStatus(0), pollingInterval * 1000)
       })
-      .catch(err => {
+      .catch((err) => {
         // on error, start another timeout with backoff
         const timeout = this.backoff(retryAttempt, pollingInterval)
         this.log.error('_pollForStatus retryAttempt:', retryAttempt, 'timeout:', timeout, err)
@@ -314,7 +320,7 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
       this.updateAccessories(poolStatus, undefined)
       return null
     } catch (err) {
-      this.updateAccessories(undefined, err)
+      this.updateAccessories(undefined, err instanceof Error ? err : new Error(String(err)))
       throw err
     }
   }
@@ -386,7 +392,7 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
     if (now - this.lastRefreshTime > 15 * 1000) {
       // set now, so we don't trigger multiple...
       this.lastRefreshTime = now
-      this.refreshStatus().catch(err => {
+      this.refreshStatus().catch((err) => {
         this.log.error('refreshIfNeeded', err)
       })
       return true
@@ -423,7 +429,7 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
           heatPoint,
         )
       })
-      .catch(err => {
+      .catch((err) => {
         this.log.error('setTargetTemperature', err)
       })
   }
@@ -438,7 +444,7 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
           state,
         )
       })
-      .catch(err => {
+      .catch((err) => {
         this.log.error('setTargetHeatingCoolingState', err)
       })
   }
@@ -449,7 +455,7 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
       .then(() => {
         this.log.debug('setCircuitState: successfully set circuit state: ', context.id, state)
       })
-      .catch(err => {
+      .catch((err) => {
         this.log.error('setCircuitState', err)
       })
   }
@@ -461,12 +467,12 @@ export class ScreenLogicPlatform implements DynamicPlatformPlugin {
         this.log.debug('sendLightCommand: successfully sent light command: ', cmd)
         // sending the light command will turn on pool/spa lights, so refresh
         setTimeout(() => {
-          this.refreshStatus().catch(err => {
+          this.refreshStatus().catch((err) => {
             this.log.error('sendLightCommand refresh', err)
           })
         }, 2500)
       })
-      .catch(err => {
+      .catch((err) => {
         this.log.error('sendLightCommand', err)
       })
   }

@@ -5,22 +5,22 @@ import {
   CharacteristicSetCallback,
 } from 'homebridge'
 
-import ScreenLogic from 'node-screenlogic'
+import { LightCommands } from 'node-screenlogic'
 
 import { ScreenLogicPlatform, AccessoryAdaptor } from './platform'
 
 const setColorConfig = [
-  { name: 'Pool Mode Party', cmd: ScreenLogic.LIGHT_CMD_COLOR_MODE_PARTY },
-  { name: 'Pool Mode Romance', cmd: ScreenLogic.LIGHT_CMD_COLOR_MODE_ROMANCE },
-  { name: 'Pool Mode Caribbean', cmd: ScreenLogic.LIGHT_CMD_COLOR_MODE_CARIBBEAN },
-  { name: 'Pool Mode American', cmd: ScreenLogic.LIGHT_CMD_COLOR_MODE_AMERICAN },
-  { name: 'Pool Mode Sunset', cmd: ScreenLogic.LIGHT_CMD_COLOR_MODE_SUNSET },
-  { name: 'Pool Mode Royal', cmd: ScreenLogic.LIGHT_CMD_COLOR_MODE_ROYAL },
-  { name: 'Pool Color Blue', cmd: ScreenLogic.LIGHT_CMD_COLOR_BLUE },
-  { name: 'Pool Color Green', cmd: ScreenLogic.LIGHT_CMD_COLOR_GREEN },
-  { name: 'Pool Color Red', cmd: ScreenLogic.LIGHT_CMD_COLOR_RED },
-  { name: 'Pool Color White', cmd: ScreenLogic.LIGHT_CMD_COLOR_WHITE },
-  { name: 'Pool Color Purple', cmd: ScreenLogic.LIGHT_CMD_COLOR_PURPLE },
+  { name: 'Pool Mode Party', cmd: LightCommands.LIGHT_CMD_COLOR_MODE_PARTY },
+  { name: 'Pool Mode Romance', cmd: LightCommands.LIGHT_CMD_COLOR_MODE_ROMANCE },
+  { name: 'Pool Mode Caribbean', cmd: LightCommands.LIGHT_CMD_COLOR_MODE_CARIBBEAN },
+  { name: 'Pool Mode American', cmd: LightCommands.LIGHT_CMD_COLOR_MODE_AMERICAN },
+  { name: 'Pool Mode Sunset', cmd: LightCommands.LIGHT_CMD_COLOR_MODE_SUNSET },
+  { name: 'Pool Mode Royal', cmd: LightCommands.LIGHT_CMD_COLOR_MODE_ROYAL },
+  { name: 'Pool Color Blue', cmd: LightCommands.LIGHT_CMD_COLOR_BLUE },
+  { name: 'Pool Color Green', cmd: LightCommands.LIGHT_CMD_COLOR_GREEN },
+  { name: 'Pool Color Red', cmd: LightCommands.LIGHT_CMD_COLOR_RED },
+  { name: 'Pool Color White', cmd: LightCommands.LIGHT_CMD_COLOR_WHITE },
+  { name: 'Pool Color Purple', cmd: LightCommands.LIGHT_CMD_COLOR_PURPLE },
 ]
 
 export interface SetColorAccessoryContext {
@@ -33,7 +33,7 @@ export class SetColorAccessory {
     return {
       generateUUID: SetColorAccessory.generateUUID,
       sameContext: SetColorAccessory.sameContext,
-      factory: function(platform: ScreenLogicPlatform, accessory: PlatformAccessory) {
+      factory: function (platform: ScreenLogicPlatform, accessory: PlatformAccessory) {
         return new SetColorAccessory(platform, accessory)
       },
     }
@@ -86,7 +86,7 @@ export class SetColorAccessory {
       }
     }
 
-    const servicesToRemove = this.accessory.services.filter(service => {
+    const servicesToRemove = this.accessory.services.filter((service) => {
       if (service.UUID === this.platform.Service.Switch.UUID) {
         return platform.config.disabledLightColors.includes(service.displayName)
       } else {
