@@ -1,10 +1,11 @@
-# homebridge-pentair-screenlogic
-[![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
-[![NPM version](https://img.shields.io/npm/v/homebridge-pentair-screenlogic)](https://npmjs.org/package/homebridge-pentair-screenlogic)
-![License](https://img.shields.io/npm/l/homebridge-pentair-screenlogic)
-[![Downloads](https://img.shields.io/npm/dt/homebridge-pentair-screenlogic.svg)](https://npmjs.org/package/homebridge-pentair-screenlogic)
+# homebridge-pentair-screenlogic-2
+[![NPM version](https://img.shields.io/npm/v/homebridge-pentair-screenlogic-2)](https://npmjs.org/package/homebridge-pentair-screenlogic-2)
+![License](https://img.shields.io/npm/l/homebridge-pentair-screenlogic-2)
+[![Downloads](https://img.shields.io/npm/dt/homebridge-pentair-screenlogic-2.svg)](https://npmjs.org/package/homebridge-pentair-screenlogic-2)
 
 Fork of [schemers/homebridge-screenlogic](https://github.com/schemers/homebridge-screenlogic) with some of my own improvements and fixes.
+
+> **Upgrading from `homebridge-pentair-screenlogic`?** This is the maintained continuation, published as `homebridge-pentair-screenlogic-2`. Uninstall the old package first (`npm uninstall -g homebridge-pentair-screenlogic`); both use the `ScreenLogic` platform and must not run together. Your config does not change. Homebridge treats this as a new plugin, so accessories are re-created and you may need to re-add them to rooms and automations in the Home app.
 
 ## ScreenLogic plug-in for [Homebridge](https://github.com/homebridge/homebridge) using the [node-screenlogic](https://github.com/parnic/node-screenlogic) library.
 
@@ -22,7 +23,7 @@ This plugin requires at a minimum:
 <!-- 2. Clone (or pull) this repository from github into the same path Homebridge lives (usually `/usr/local/lib/node_modules`). Note: the code currently on GitHub is in beta, and is newer than the latest published version of this package on `npm` -->
 
 1. Install homebridge using: `npm install -g homebridge`
-2. Install this plug-in using: `npm install -g homebridge-pentair-screenlogic`
+2. Install this plug-in using: `npm install -g homebridge-pentair-screenlogic-2`
 3. Update your configuration file. See example `config.json` snippet below.
 
 ## Configuration

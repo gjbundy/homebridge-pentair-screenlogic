@@ -1,6 +1,6 @@
 {
   "displayName": "Homebridge Pentair Screenlogic",
-  "name": "homebridge-pentair-screenlogic",
+  "name": "homebridge-pentair-screenlogic-2",
   "version": "4.0.0",
   "description": "Plugin for Pentair Screenlogic Controllers",
   "repository": {
